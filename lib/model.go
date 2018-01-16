@@ -12,17 +12,17 @@ type Jontainer struct {
 }
 
 type Jmage struct {
-	Id     string `json:"id"`
-	Name   []string `json:"name"`
-	Size   int64  `json:"size"`
+	Id   string   `json:"id"`
+	Name []string `json:"name"`
+	Size int64    `json:"name"`
 }
 
 type Jonfiguration struct {
-	Port int `json:"port"`
 	Alerts []Jalert `json:"alerts"`
 }
 
 type Jalert struct {
 	Jmage     Jmage `json:"jmage"`
-	Threshold int64  `json:"threshold"`
+	Threshold int64 `json:"threshold"`
+	Status    bool  `json:"status"`
 }
