@@ -28,9 +28,9 @@ WORKDIR /root/
 # copy the binary from previous stage
 COPY --from=builder /go/src/github.com/made2591/jaker .
 
-COPY crontab /etc/cron.d/checker
-RUN chmod 0644 /etc/cron.d/checker
-RUN service cron start
+COPY ./crontab /usr/local/bin/crontab
+RUN echo '10  *  *  *  *    /usr/local/bin/crontab' > /etc/crontabs/root
+CMD ['crond', '-l 2', '-f']
 
 # execute
 CMD ["./jaker"]
