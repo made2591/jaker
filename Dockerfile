@@ -1,0 +1,1 @@
+FROM rochacon/docker-cron

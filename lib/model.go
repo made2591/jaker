@@ -18,11 +18,15 @@ type Jmage struct {
 }
 
 type Jonfiguration struct {
-	Alerts []Jalert `json:"alerts"`
+	GlobalRepoDimension Jalert   `json:"globalRepoDimension"`
+	Alerts              []Jalert `json:"alerts"`
 }
 
 type Jalert struct {
-	Jmage     Jmage `json:"jmage"`
 	Threshold int64 `json:"threshold"`
 	Status    bool  `json:"status"`
+}
+
+type Value struct {
+	Value int64    `json:"value"`
 }

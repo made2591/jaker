@@ -38,16 +38,19 @@ func main() {
 	router := http.NewServeMux()
 
 	// list containers
-	router.Handle("/list/containers", lib.Listc())
+	router.Handle("/list/containers", lib.ListContainers())
 
 	// list images
-	router.Handle("/list/images", lib.Listi())
+	router.Handle("/list/images", lib.ListImages())
+
+	// list images
+	router.Handle("/images/size", lib.GetImagesSize())
 
 	// config
-	router.Handle("/config", lib.Config())
+	router.Handle("/config", lib.Configuration())
 
 	// notify
-	router.Handle("/notify", lib.Notify())
+	router.Handle("/notify/", lib.NotifyGlobalRepoDimension())
 
 	// new request ID
 	nextRequestID := func() string {

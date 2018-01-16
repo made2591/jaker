@@ -8,39 +8,62 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
 	"github.com/0xAX/notificator"
+	"github.com/dustin/go-humanize"
 )
 
 const (
-	jakerName = "Jaker"
+	JAKER_NOTIFICATION_NAME     = "Jaker"
+	JAKER_LIMIT_REACHED_TITLE   = "Docker image repository"
+	JAKER_LIMIT_REACHED_CONTENT = "Limit reached: "
 )
 
 var (
 
-	JCONFIGURATION = Jonfiguration{ Alerts: []Jalert{} }
+	JONFIGURATION = Jonfiguration{ Alerts: []Jalert{} }
 
 )
 
-func Notify() http.Handler {
+func NotifyGlobalRepoDimension() http.Handler {
 
 	var notify *notificator.Notificator
-	title   := "Docker image repository"
-	content := "Limit reached: local repository size 9.8Gb"
 
 	notify = notificator.New(notificator.Options{
 		DefaultIcon: "icon/docker.png",
-		AppName:     jakerName,
+		AppName:     JAKER_NOTIFICATION_NAME,
 	})
 
+	jmages := listImages()
+
+	totalSize := int64(0)
+	for _, jmage := range jmages {
+		totalSize += jmage.Size
+	}
+
+	if totalSize > JONFIGURATION.GlobalRepoDimension.Threshold {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := notify.Push(
+				JAKER_LIMIT_REACHED_TITLE,
+				JAKER_LIMIT_REACHED_CONTENT+
+					humanize.Bytes(uint64(totalSize))+
+					" with limit at "+
+					humanize.Bytes(uint64(JONFIGURATION.GlobalRepoDimension.Threshold)),
+				"./img/docker.png",
+				notificator.UR_NORMAL)
+			if err != nil {
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := notify.Push(title, content, "./img/docker.png", notificator.UR_NORMAL)
-		if err != nil {
-			w.WriteHeader(http.StatusOK)
-		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	})
+
 }
 
 // Serve configuration request - PUT
-func Config() http.Handler {
+func Configuration() http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -48,13 +71,13 @@ func Config() http.Handler {
 			http.Error(w, "Please send a request body", http.StatusBadRequest)
 			return
 		}
-		err := json.NewDecoder(r.Body).Decode(&JCONFIGURATION)
+		err := json.NewDecoder(r.Body).Decode(&JONFIGURATION)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		b, err := json.Marshal(JCONFIGURATION)
+		b, err := json.Marshal(JONFIGURATION)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -65,8 +88,8 @@ func Config() http.Handler {
 
 }
 
-// Serve containers list - GET
-func Listc() http.Handler {
+// Get containers list from Docker API
+func listContainers() (jontainers []Jontainer){
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -78,14 +101,23 @@ func Listc() http.Handler {
 		panic(err)
 	}
 
-	jontainers := []Jontainer{}
 	for _, container := range containers {
 		//fmt.Printf("%s %s\n", container.ID[:10], container.Image)
-		jontainers = append(jontainers, Jontainer{Id: container.ID[:10], Name: container.Names[0], Image: container.Image, Status: container.Status})
+		jontainers = append(jontainers, Jontainer{Id: container.ID[:10],
+		Name: container.Names[0], Image: container.Image, Status: container.Status})
 	}
 
+	return jontainers
+
+}
+
+// Serve containers list - GET
+func ListContainers() http.Handler {
+
+	jontainers := listContainers()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(containers) == 0 {
+		if len(jontainers) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		} else {
@@ -101,7 +133,8 @@ func Listc() http.Handler {
 
 }
 
-func Listi() http.Handler {
+// Get images list from Docker API
+func listImages() (jmages []Jmage) {
 
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -113,13 +146,21 @@ func Listi() http.Handler {
 		panic(err)
 	}
 
-	jmages := []Jmage{}
 	for _, image := range images {
 		jmages = append(jmages, Jmage{Id: image.ID[:10], Name: image.RepoDigests, Size: image.Size})
 	}
 
+	return jmages
+
+}
+
+// Serve images list - GET
+func ListImages() http.Handler {
+
+	jmages := listImages()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(images) == 0 {
+		if len(jmages) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		} else {
@@ -131,6 +172,44 @@ func Listi() http.Handler {
 			w.Write(b)
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
+	})
+
+}
+
+// Get images list from Docker API
+func getImagesSize() (Value) {
+
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		panic(err)
+	}
+
+	images, err := cli.ImageList(context.Background(), types.ImageListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	result := int64(0)
+	for _, image := range images {
+		result += image.Size
+	}
+
+	return Value{ Value: result }
+
+}
+
+// Get images list from Docker API
+func GetImagesSize() http.Handler {
+
+	totalSize := getImagesSize()
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := json.Marshal(totalSize)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(b)
 	})
 
 }
