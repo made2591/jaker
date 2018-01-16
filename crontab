@@ -1,0 +1,2 @@
+10 * * * * root curl -i localhost:5000/notify/global-repo-dimension
+# Mandatory blank line

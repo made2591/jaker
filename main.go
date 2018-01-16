@@ -50,7 +50,7 @@ func main() {
 	router.Handle("/config", lib.Configuration())
 
 	// notify
-	router.Handle("/notify/", lib.NotifyGlobalRepoDimension())
+	router.Handle("/notify/global-repo-dimension", lib.NotifyGlobalRepoDimension())
 
 	// new request ID
 	nextRequestID := func() string {
