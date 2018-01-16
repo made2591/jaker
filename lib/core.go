@@ -14,7 +14,7 @@ func Notify(title string, content string, ) http.Handler {
 	var notify *notificator.Notificator
 
 	notify = notificator.New(notificator.Options{
-		DefaultIcon: "./img/docker.png",
+		DefaultIcon: "icon/docker.png",
 		AppName:     jakerName,
 	})
 
@@ -25,3 +25,4 @@ func Notify(title string, content string, ) http.Handler {
 		}
 	})
 }
+

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"flag"
 	"time"
+	"strconv"
 	"context"
 	"net/http"
 	"os/signal"
@@ -29,10 +30,11 @@ const (
 var (
 	listenAddr string
 	healthy    int32
+	jonfiguration = lib.Jonfiguration{ Port: 5000, Alerts: []lib.Jalert{}}
 )
 
 func main() {
-	flag.StringVar(&listenAddr, "listen-addr", ":5000", "server listen address")
+	flag.StringVar(&listenAddr, "listen-addr", ":"+strconv.Itoa(jonfiguration.Port), "server listen address")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
@@ -40,7 +42,9 @@ func main() {
 
 	router := http.NewServeMux()
 	router.Handle("/listc", listc())
-	router.Handle("/notify", lib.Notify("test", "ciao"))
+	router.Handle("/listi", listi())
+	router.Handle("/config", config())
+	router.Handle("/notify", lib.Notify("Docker image repository", "Limit reached: local repository size 9.8Gb"))
 
 	nextRequestID := func() string {
 		return fmt.Sprintf("%d", time.Now().UnixNano())
@@ -84,6 +88,30 @@ func main() {
 	logger.Println("Server stopped")
 }
 
+func config() http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Body == nil {
+			http.Error(w, "Please send a request body", http.StatusBadRequest)
+			return
+		}
+		err := json.NewDecoder(r.Body).Decode(&jonfiguration)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		b, err := json.Marshal(jonfiguration)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(b)
+	})
+
+}
+
 func listc() http.Handler {
 
 	cli, err := client.NewEnvClient()
@@ -108,6 +136,40 @@ func listc() http.Handler {
 			return
 		} else {
 			b, err := json.Marshal(jontainers)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Write(b)
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+	})
+
+}
+
+func listi() http.Handler {
+
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		panic(err)
+	}
+
+	images, err := cli.ImageList(context.Background(), types.ImageListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	jmages := []lib.Jmage{}
+	for _, image := range images {
+		jmages = append(jmages, lib.Jmage{Id: image.ID[:10], Name: image.RepoDigests, Size: image.Size})
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(images) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		} else {
+			b, err := json.Marshal(jmages)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

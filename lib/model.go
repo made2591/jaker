@@ -11,11 +11,18 @@ type Jontainer struct {
 	Status string `json:"status"`
 }
 
+type Jmage struct {
+	Id     string `json:"id"`
+	Name   []string `json:"name"`
+	Size   int64  `json:"size"`
+}
+
 type Jonfiguration struct {
 	Port int `json:"port"`
+	Alerts []Jalert `json:"alerts"`
 }
 
 type Jalert struct {
-	Tipe      string
-	Threshold float64
+	Jmage     Jmage `json:"jmage"`
+	Threshold int64  `json:"threshold"`
 }
