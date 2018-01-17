@@ -1,2 +1,0 @@
-#!/bin/sh
-curl -i localhost:5000/notify/global-repo-dimension
