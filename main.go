@@ -37,20 +37,20 @@ func main() {
 	// setup routing
 	router := http.NewServeMux()
 
+	// list images
+	router.Handle("/images/list", lib.ListImages())
+
+	// list images
+	router.Handle("/images/global-size", lib.GetImagesSize())
+
 	// list containers
-	router.Handle("/list/containers", lib.ListContainers())
-
-	// list images
-	router.Handle("/list/images", lib.ListImages())
-
-	// list images
-	router.Handle("/images/size", lib.GetImagesSize())
+	router.Handle("/containers/list", lib.ListContainers())
 
 	// config
 	router.Handle("/config", lib.Configuration())
 
 	// notify
-	router.Handle("/notify/global-repo-dimension", lib.NotifyGlobalRepoDimension())
+	router.Handle("/notify/local/repository/size", lib.NotifyLocalRepositorySize())
 
 	// new request ID
 	nextRequestID := func() string {

@@ -18,7 +18,7 @@ type Jmage struct {
 }
 
 type Jonfiguration struct {
-	GlobalRepoDimension Jalert   `json:"globalRepoDimension"`
+	LocalRepositorySize Jalert   `json:"localRepositorySize"`
 	Alerts              []Jalert `json:"alerts"`
 }
 

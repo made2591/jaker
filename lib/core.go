@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/0xAX/notificator"
 	"github.com/dustin/go-humanize"
+	"fmt"
 )
 
 const (
@@ -23,7 +24,7 @@ var (
 
 )
 
-func NotifyGlobalRepoDimension() http.Handler {
+func NotifyLocalRepositorySize() http.Handler {
 
 	var notify *notificator.Notificator
 
@@ -39,14 +40,14 @@ func NotifyGlobalRepoDimension() http.Handler {
 		totalSize += jmage.Size
 	}
 
-	if totalSize > JONFIGURATION.GlobalRepoDimension.Threshold {
+	if totalSize > JONFIGURATION.LocalRepositorySize.Threshold {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := notify.Push(
 				JAKER_LIMIT_REACHED_TITLE,
 				JAKER_LIMIT_REACHED_CONTENT+
 					humanize.Bytes(uint64(totalSize))+
 					" with limit at "+
-					humanize.Bytes(uint64(JONFIGURATION.GlobalRepoDimension.Threshold)),
+					humanize.Bytes(uint64(JONFIGURATION.LocalRepositorySize.Threshold)),
 				"./img/docker.png",
 				notificator.UR_NORMAL)
 			if err != nil {
@@ -74,6 +75,7 @@ func Configuration() http.Handler {
 		err := json.NewDecoder(r.Body).Decode(&JONFIGURATION)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			fmt.Print(err)
 			return
 		}
 
